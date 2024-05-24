@@ -82,3 +82,137 @@ public:
     size_t order() const {
         return _vertices.size();
     }
+    size_t degree(const Vertex& v) const { //���������� �����, ������� ��������� � �������� v.
+        if (!has_vertex(v))
+            throw std::invalid_argument("Vertex doesn't exist in the graph");
+
+        size_t degree = _edges.at(v).size();
+        for (const auto& kv : _edges) {
+            if (kv.first != v) {
+                for (const Edge& e : kv.second) {
+                    if (e.to == v)
+                        degree++;
+                }
+            }
+        }
+        return degree;
+    }
+
+    std::vector<Edge> shortest_path(const Vertex& from, const Vertex& to) const {
+        if (!has_vertex(from) || !has_vertex(to))
+            throw std::invalid_argument("Vertex does not exist in the graph");
+
+        std::unordered_map<Vertex, Distance> distance;
+        std::unordered_map<Vertex, Edge> predecessor;
+        std::set<std::pair<Distance, Vertex>> pq;
+
+        for (const Vertex& v : _vertices) {
+            distance[v] = std::numeric_limits<Distance>::infinity();
+            predecessor[v] = Edge();
+        }
+
+        distance[from] = Distance();
+        pq.insert({ Distance(), from });
+
+        while (!pq.empty()) {
+            Vertex u = pq.begin()->second;
+            pq.erase(pq.begin());
+
+            for (const Edge& e : _edges.at(u)) {
+                Vertex v = e.to;
+                Distance weight = e.distance;
+                if (distance[u] + weight < distance[v]) {
+                    pq.erase({ distance[v], v });
+                    distance[v] = distance[u] + weight;
+                    predecessor[v] = e;
+                    pq.insert({ distance[v], v });
+                }
+            }
+        }
+
+        std::vector<Edge> path;
+        for (Vertex v = to; predecessor[v].from != Vertex(); v = predecessor[v].from) {
+            path.push_back(predecessor[v]);
+        }
+        std::reverse(path.begin(), path.end());
+        return path;
+    }
+    void walk(const Vertex& start_vertex, std::function<void(const Vertex&)> action) {
+        if (!has_vertex(start_vertex))
+            return;
+
+        std::queue<Vertex> queue;
+        std::unordered_set<Vertex> visited;
+
+        queue.push(start_vertex);
+        visited.insert(start_vertex);
+
+        while (!queue.empty()) {
+            Vertex current = queue.front();
+            queue.pop();
+            action(current);
+
+            for (const Edge& edge : _edges.at(current)) {
+                if (visited.find(edge.to) == visited.end()) {
+                    queue.push(edge.to);
+                    visited.insert(edge.to);
+                }
+            }
+        }
+    }
+
+    Vertex find_furthest_hospital()const {
+        std::unordered_map<Vertex, double> avg_distances;
+
+        auto& vertices_ = this->vertices();
+
+        for (const auto& v : vertices_) {
+            double total_distance = 0.0;
+            int num_neighbors = 0;
+
+            for (const auto& u : vertices_) {
+                if (u != v) {
+                        std::vector<Edge> path = shortest_path(v, u);
+                        double path_distance = 0.0;
+                        for (const auto& edge : path) {
+                            path_distance += edge.distance;
+                        }
+                        total_distance += path_distance;
+                        num_neighbors++;
+                }
+            }
+            if (num_neighbors > 0) {
+                avg_distances[v] = total_distance / num_neighbors;
+            }
+        }
+
+        Vertex furthest_hospital;
+        double max_avg_distance = -1.0;
+
+        for (const auto& pair : avg_distances) {
+            const Vertex& v = pair.first;
+            double distance = pair.second;
+
+            if (distance > max_avg_distance) {
+                max_avg_distance = distance;
+                furthest_hospital = v;
+            }
+        }
+
+        return furthest_hospital;
+    }
+    const std::unordered_set<Vertex>& vertices() const {
+        return _vertices;
+    }
+
+    const std::vector<Edge>& edges(const Vertex& vertex) const {
+        return _edges[vertex];
+    }
+
+private:
+    std::unordered_set<Vertex> _vertices;
+    std::unordered_map<Vertex, std::vector<Edge>> _edges;
+
+ 
+
+};
