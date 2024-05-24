@@ -18,3 +18,10 @@ protected:
     Graph<std::string, double> graph;
 };
 
+TEST_F(GraphTest, AddVertex) {
+    ASSERT_TRUE(graph.has_vertex("A"));
+    ASSERT_TRUE(graph.has_vertex("B"));
+    ASSERT_TRUE(graph.has_vertex("C"));
+    ASSERT_TRUE(graph.has_vertex("D"));
+}
+
